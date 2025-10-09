@@ -7,9 +7,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-# ----------------- Configuration -----------------
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-DEFAULT_ROOT_FOLDER_ID = '1FbtwxTeN5aIuN6i-paA8MgIAVePn4kO1'  # ID par défaut (modifiable)
 CREDENTIALS_FILE = "credentials.json"
 TOKEN_FILE = "token.json"
 
@@ -94,13 +92,12 @@ def cluster_by_course_fast(files, threshold=70):
     return clusters
 
 # ----------------- API Routes -----------------
-
 @app.get("/")
 def home():
     return {"message": "Bienvenue sur l'API Drive Course Clustering 🚀"}
 
 @app.get("/clusters")
-def get_clusters(folder_id: str = Query(DEFAULT_ROOT_FOLDER_ID, description="ID du dossier Google Drive")):
+def get_clusters(folder_id: str = Query(..., description="ID du dossier Google Drive à analyser")):
     try:
         service = authenticate_drive()
         all_files = list_files_in_folder(service, folder_id)
@@ -116,7 +113,7 @@ def get_clusters(folder_id: str = Query(DEFAULT_ROOT_FOLDER_ID, description="ID 
 @app.get("/search")
 def search_course(
     query: str = Query(..., description="Nom du cours à rechercher"),
-    folder_id: str = Query(DEFAULT_ROOT_FOLDER_ID, description="ID du dossier Google Drive")
+    folder_id: str = Query(..., description="ID du dossier Google Drive dans lequel chercher")
 ):
     try:
         service = authenticate_drive()
