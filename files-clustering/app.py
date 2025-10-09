@@ -131,3 +131,8 @@ def search_course(
         return JSONResponse(content={"query": query, "folder_id": folder_id, "found": len(found_files), "files": found_files})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ----------------- Run Application -----------------
+if __name__ == "__main__":  
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
