@@ -3,35 +3,31 @@ from fastapi.responses import JSONResponse
 import os
 import re
 from rapidfuzz import fuzz, process
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
 
+# ----------------- Configuration Google Drive -----------------
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-CREDENTIALS_FILE = "credentials.json"
-TOKEN_FILE = "token.json"
+TOKEN_FILE = "files_clustering/token.json"  # token OAuth généré une fois
+# Assurez-vous d'avoir déjà généré token.json avec vos credentials OAuth
 
 app = FastAPI(title="Drive Course Clustering API 🚀", version="1.1.0")
 
-# ----------------- Authentification -----------------
+# ----------------- Authentification Drive -----------------
 def authenticate_drive():
-    creds = None
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-    if not creds or not creds.valid:
-        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-        creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, "w") as token:
-            token.write(creds.to_json())
-    return build("drive", "v3", credentials=creds)
+    if not os.path.exists(TOKEN_FILE):
+        raise FileNotFoundError(f"Le fichier token OAuth n'existe pas : {TOKEN_FILE}")
+    creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    service = build('drive', 'v3', credentials=creds)
+    return service
 
-# ----------------- Extraction nom de cours -----------------
+# ----------------- Extraction du nom de cours -----------------
 def extract_course_name(filename):
     name = os.path.splitext(filename)[0]
     name = re.sub(r'(_resume|_ملخص|Unit\d+|Partie\d+)', '', name, flags=re.IGNORECASE)
     return name.strip().lower()
 
-# ----------------- Lister fichiers -----------------
+# ----------------- Lister les fichiers dans un dossier Drive -----------------
 def list_files_in_folder(service, folder_id):
     files = []
     query = f"'{folder_id}' in parents and (mimeType='application/json' or mimeType='application/pdf') and trashed=false"
@@ -50,6 +46,7 @@ def list_files_in_folder(service, folder_id):
         if not page_token:
             break
 
+    # Récursion dans les sous-dossiers
     folder_query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
     page_token = None
     while True:
@@ -70,7 +67,7 @@ def list_files_in_folder(service, folder_id):
 
     return files
 
-# ----------------- Clustering -----------------
+# ----------------- Clustering par nom de cours -----------------
 def cluster_by_course_fast(files, threshold=70):
     names = [extract_course_name(f['name']) for f in files]
     clusters = []
@@ -91,7 +88,7 @@ def cluster_by_course_fast(files, threshold=70):
         clusters.append(current_cluster)
     return clusters
 
-# ----------------- API Routes -----------------
+# ----------------- Routes API -----------------
 @app.get("/")
 def home():
     return {"message": "Bienvenue sur l'API Drive Course Clustering 🚀"}
@@ -128,8 +125,8 @@ def search_course(
         return JSONResponse(content={"query": query, "folder_id": folder_id, "found": len(found_files), "files": found_files})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 # ----------------- Run Application -----------------
 if __name__ == "__main__":  
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
