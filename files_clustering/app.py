@@ -74,11 +74,7 @@ def list_files_in_folder(service, folder_id):
 
 # ----------------- Clustering avec séparation surah -----------------
 def cluster_by_course_with_surah(files, similarity_threshold=85):
-    """
-    Clustering amélioré :
-    - Sépare automatiquement par surah (ex: 'سورة ق', 'سورة لقمان') si trouvée
-    - Puis regroupe les fichiers du même cours ensemble
-    """
+    
     clusters_by_surah = {}
 
     for f in files:
