@@ -1,0 +1,9 @@
+fastapi==0.119.0
+uvicorn==0.37.0
+numpy==2.0.2
+scikit-learn==1.6.1
+sentence-transformers==2.2.2
+hdbscan==0.8.32
+nltk==3.8.1
+google-api-python-client==2.96.0
+google-auth==2.22.0
